@@ -42,6 +42,9 @@
 #include "ranger_msgs/msg/driver_state.hpp"
 #include "ranger_msgs/msg/motor_state.hpp"
 
+// Standard Empty service for reset
+#include <std_srvs/srv/trigger.hpp> 
+
 #include "ranger_base/ranger_params.hpp"
 
 namespace westonrobot {
@@ -69,12 +72,16 @@ class RangerROSMessenger : public std::enable_shared_from_this<RangerROSMessenge
  private:
   void LoadParameters();
   void SetupSubscription();
+  void SetupServices();  // Function for setting up ROS2 service
   void PublishStateToROS();
   void PublishSimStateToROS(double linear, double angular);
   void TwistCmdCallback(geometry_msgs::msg::Twist::SharedPtr msg);
   double CalculateSteeringAngle(geometry_msgs::msg::Twist msg, double& radius);
   void UpdateOdometry(double linear, double angular, double angle, double dt);
   geometry_msgs::msg::Quaternion createQuaternionMsgFromYaw(double yaw);
+
+  void ResetOdometryCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+  std::shared_ptr<std_srvs::srv::Trigger::Response>);
 
   double ConvertInnerAngleToCentral(double angle);
   double ConvertCentralAngleToInner(double angle);
@@ -96,6 +103,10 @@ class RangerROSMessenger : public std::enable_shared_from_this<RangerROSMessenge
   int update_rate_;
   bool publish_odom_tf_;
 
+  /// Covariance diagonal
+  double position_covariance_;
+  double orientation_covariance_;
+
   uint8_t motion_mode_ = 0;
 
   rclcpp::Publisher<ranger_msgs::msg::SystemState>::SharedPtr system_state_pub_;
@@ -107,7 +118,10 @@ class RangerROSMessenger : public std::enable_shared_from_this<RangerROSMessenge
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr motion_cmd_sub_;
 
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
-
+  
+  // ROS2 Service to Reset the Odometry Frame
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr reset_odom_service_;
+  
   // odom variables
   rclcpp::Time last_time_;
   rclcpp::Time current_time_;

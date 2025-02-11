@@ -7,6 +7,8 @@
     <arg name="update_rate" default="50" />
     <arg name="odom_topic_name" default="odom" />
     <arg name="publish_odom_tf" default="false" />
+    <arg name="position_covariance" default="0.1" />
+    <arg name="orientation_covariance" default="0.1" />
 
     <node name="ranger_base_node" pkg="ranger_base" exec="ranger_base_node" output="both">
         <param name="port_name"  value="$(var port_name)" />
@@ -15,6 +17,8 @@
         <param name="base_frame"  value="$(var base_frame)" />
         <param name="update_rate"  value="$(var update_rate)" />
         <param name="odom_topic_name"  value="$(var odom_topic_name)" />  
-        <param name="publish_odom_tf"  value="$(var publish_odom_tf)" />
+	<param name="publish_odom_tf"  value="$(var publish_odom_tf)" />
+	<param name="position_covariance" value="$(var position_covariance)" />
+        <param name="orientation_covariance" value="$(var orientation_covariance)" />
     </node>
 </launch>

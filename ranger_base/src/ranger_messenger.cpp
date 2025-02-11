@@ -43,6 +43,7 @@ RangerROSMessenger::RangerROSMessenger(rclcpp::Node::SharedPtr& node){
     return;
   }
 
+  SetupServices();  // Initialize the services
   SetupSubscription();
 }
 
@@ -64,6 +65,8 @@ void RangerROSMessenger::LoadParameters() {
   update_rate_ = node_->declare_parameter<int>("update_rate", 50);
   odom_topic_name_ = node_->declare_parameter<std::string>("odom_topic_name", "odom");
   publish_odom_tf_ = node_->declare_parameter<bool>("publish_odom_tf",false);
+  position_covariance_ = node_->declare_parameter<double>("position_covariance", 0.1);
+  orientation_covariance_ = node_->declare_parameter<double>("orientation_covariance", 0.1);
 
   RCLCPP_INFO(node_->get_logger(),
       "Successfully loaded the following parameters: \n port_name: %s\n "
@@ -139,6 +142,31 @@ void RangerROSMessenger::SetupSubscription() {
       "/cmd_vel", 5, std::bind(&RangerROSMessenger::TwistCmdCallback, this, std::placeholders::_1)
       );
   tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node_);
+}
+
+void RangerROSMessenger::SetupServices() {
+
+    reset_odom_service_ = node_->create_service<std_srvs::srv::Trigger>(
+        "reset_odometry",
+        std::bind(&RangerROSMessenger::ResetOdometryCallback, this, std::placeholders::_1, std::placeholders::_2));
+
+    RCLCPP_INFO(node_->get_logger(), "Reset Odometry service is ready.");
+}
+
+void RangerROSMessenger::ResetOdometryCallback(
+    const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+
+    // Reset odometry state
+    position_x_ = 0.0;
+    position_y_ = 0.0;
+    theta_ = 0.0;
+
+    // Set success response
+    response->success = true;
+    response->message = "Odometry has been reset to zero.";
+
+    RCLCPP_INFO(node_->get_logger(), "Odometry reset requested. Resetting to zero.");
 }
 
 void RangerROSMessenger::PublishStateToROS() {
@@ -317,6 +345,9 @@ void RangerROSMessenger::UpdateOdometry(double linear, double angular,
   odom_msg.pose.pose.position.y = position_y_;
   odom_msg.pose.pose.position.z = 0.0;
   odom_msg.pose.pose.orientation = odom_quat;
+  odom_msg.pose.covariance[0] = position_covariance_;
+  odom_msg.pose.covariance[7] = position_covariance_;
+  odom_msg.pose.covariance[35] = orientation_covariance_;
 
   if (motion_mode_ == MotionState::MOTION_MODE_DUAL_ACKERMAN) {
     odom_msg.twist.twist.linear.x = linear;
@@ -324,6 +355,7 @@ void RangerROSMessenger::UpdateOdometry(double linear, double angular,
     odom_msg.twist.twist.angular.z =
         2 * linear * std::sin(ConvertInnerAngleToCentral(angle)) /
         robot_params_.wheelbase;
+
   } else if (motion_mode_ == MotionState::MOTION_MODE_PARALLEL ||
              motion_mode_ == MotionState::MOTION_MODE_SIDE_SLIP) {
     double phi = angle;
