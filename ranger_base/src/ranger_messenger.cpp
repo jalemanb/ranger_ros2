@@ -67,6 +67,8 @@ void RangerROSMessenger::LoadParameters() {
   publish_odom_tf_ = node_->declare_parameter<bool>("publish_odom_tf",false);
   position_covariance_ = node_->declare_parameter<double>("position_covariance", 0.1);
   orientation_covariance_ = node_->declare_parameter<double>("orientation_covariance", 0.1);
+  linear_velocity_covariance_ = node_->declare_parameter<double>("linear_velocity_covariance", 0.1);
+  angular_velocity_covariance_ = node_->declare_parameter<double>("angular_velocity_covariance", 0.1);
 
   RCLCPP_INFO(node_->get_logger(),
       "Successfully loaded the following parameters: \n port_name: %s\n "
@@ -355,6 +357,9 @@ void RangerROSMessenger::UpdateOdometry(double linear, double angular,
     odom_msg.twist.twist.angular.z =
         2 * linear * std::sin(ConvertInnerAngleToCentral(angle)) /
         robot_params_.wheelbase;
+    odom_msg.twist.covariance[0] = linear_velocity_covariance_;
+    odom_msg.twist.covariance[7] = linear_velocity_covariance_;
+    odom_msg.twist.covariance[35] = angular_velocity_covariance_;
 
   } else if (motion_mode_ == MotionState::MOTION_MODE_PARALLEL ||
              motion_mode_ == MotionState::MOTION_MODE_SIDE_SLIP) {
@@ -365,12 +370,17 @@ void RangerROSMessenger::UpdateOdometry(double linear, double angular,
     }
     odom_msg.twist.twist.linear.x = linear * std::cos(phi);
     odom_msg.twist.twist.linear.y = linear * std::sin(phi);
-
     odom_msg.twist.twist.angular.z = 0;
+    odom_msg.twist.covariance[0] = linear_velocity_covariance_;
+    odom_msg.twist.covariance[7] = linear_velocity_covariance_;
+    odom_msg.twist.covariance[35] = angular_velocity_covariance_ / 2.0;
   } else if (motion_mode_ == MotionState::MOTION_MODE_SPINNING) {
     odom_msg.twist.twist.linear.x = 0;
     odom_msg.twist.twist.linear.y = 0;
     odom_msg.twist.twist.angular.z = angular;
+    odom_msg.twist.covariance[0] = linear_velocity_covariance_ / 2.0;
+    odom_msg.twist.covariance[7] = linear_velocity_covariance_ / 2.0;
+    odom_msg.twist.covariance[35] = angular_velocity_covariance_;
   }
 
   odom_pub_->publish(odom_msg);

@@ -106,6 +106,8 @@ class RangerROSMessenger : public std::enable_shared_from_this<RangerROSMessenge
   /// Covariance diagonal
   double position_covariance_;
   double orientation_covariance_;
+  double linear_velocity_covariance_;
+  double angular_velocity_covariance_;
 
   uint8_t motion_mode_ = 0;
 

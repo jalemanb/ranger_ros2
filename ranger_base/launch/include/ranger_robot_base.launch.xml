@@ -9,6 +9,8 @@
     <arg name="publish_odom_tf" default="false" />
     <arg name="position_covariance" default="0.1" />
     <arg name="orientation_covariance" default="0.1" />
+    <arg name="linear_velocity_covariance" default="0.1" />
+    <arg name="angular_velocity_covariance" default="0.1" />
 
     <node name="ranger_base_node" pkg="ranger_base" exec="ranger_base_node" output="both">
         <param name="port_name"  value="$(var port_name)" />
@@ -19,6 +21,8 @@
         <param name="odom_topic_name"  value="$(var odom_topic_name)" />  
 	<param name="publish_odom_tf"  value="$(var publish_odom_tf)" />
 	<param name="position_covariance" value="$(var position_covariance)" />
-        <param name="orientation_covariance" value="$(var orientation_covariance)" />
+	<param name="orientation_covariance" value="$(var orientation_covariance)" />
+	<param name="linear_velocity_covariance" value="$(var linear_velocity_covariance)" />
+        <param name="angular_velocity_covariance" value="$(var angular_velocity_covariance)" />
     </node>
 </launch>
